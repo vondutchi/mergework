@@ -158,6 +158,12 @@ def _maintainer_activity_check(
             "warn",
             f"recent maintainer activity for bounty #{bounty_ref} could not be verified",
         )
+    if max_age_days < 0:
+        return _check(
+            "maintainer_activity",
+            "warn",
+            f"recent maintainer activity for bounty #{bounty_ref} could not be verified",
+        )
     delta = now - last_activity
     age_days = max(0, int(delta.total_seconds() // 86400))
     if delta > timedelta(days=max_age_days):
@@ -638,6 +644,20 @@ def format_text(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _non_negative_int_arg(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "--max-maintainer-age-days must be zero or a positive integer"
+        ) from exc
+    if parsed < 0:
+        raise argparse.ArgumentTypeError(
+            "--max-maintainer-age-days must be zero or a positive integer"
+        )
+    return parsed
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check a MergeWork bounty submission draft.")
     source = parser.add_mutually_exclusive_group(required=True)
@@ -647,7 +667,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--api-host", default=DEFAULT_API_HOST)
     parser.add_argument(
         "--max-maintainer-age-days",
-        type=int,
+        type=_non_negative_int_arg,
         default=DEFAULT_MAX_MAINTAINER_AGE_DAYS,
         help="Warn when the referenced bounty has no maintainer activity within this many days.",
     )

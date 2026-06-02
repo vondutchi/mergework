@@ -452,12 +452,22 @@ def load_live_issues(repo: str, limit: int, api_host: str = DEFAULT_API_HOST) ->
     }
 
 
+def _positive_int_arg(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("--limit must be a positive integer") from exc
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("--limit must be a positive integer")
+    return parsed
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Read-only proposed-work intake triage report")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--input", type=Path, help="Offline JSON fixture with issues/payments")
     source.add_argument("--repo", help="GitHub repo for read-only gh live mode")
-    parser.add_argument("--limit", type=int, default=50)
+    parser.add_argument("--limit", type=_positive_int_arg, default=50)
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     parser.add_argument("--api-host", default=DEFAULT_API_HOST)
     args = parser.parse_args(argv)

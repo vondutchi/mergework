@@ -5,6 +5,8 @@ import subprocess
 import urllib.error
 from typing import Any
 
+import pytest
+
 from scripts.proposed_work_triage import _run_gh, analyze_proposed_work, format_markdown, main
 
 
@@ -325,6 +327,18 @@ def test_proposed_work_triage_markdown_and_json_cli(tmp_path, capsys) -> None:
     markdown = format_markdown(output)
     assert "# Proposed Work Triage" in markdown
     assert "#672 Read-only proposed-work intake triage report" in markdown
+
+
+@pytest.mark.parametrize("limit", ("0", "-1"))
+def test_proposed_work_triage_rejects_non_positive_limit(limit: str, capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--repo", "ramimbo/mergework", "--limit", limit, "--format", "json"])
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "--limit must be a positive integer" in captured.err
+    assert "Traceback" not in captured.err
+    assert captured.out == ""
 
 
 def test_proposed_work_triage_live_mode_uses_read_only_gh(monkeypatch, capsys) -> None:

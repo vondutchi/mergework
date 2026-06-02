@@ -604,6 +604,33 @@ def test_submission_quality_gate_warns_for_malformed_maintainer_age_threshold() 
     } in result["checks"]
 
 
+def test_submission_quality_gate_warns_for_negative_maintainer_age_threshold() -> None:
+    result = evaluate_submission(
+        {
+            "submission_text": "Summary: add validation\n\nRefs #319\n\nValidation: pytest passed",
+            "now": "2026-06-02T12:00:00Z",
+            "bounties": [
+                {
+                    "number": 319,
+                    "state": "OPEN",
+                    "awards_remaining": 1,
+                    "last_maintainer_activity_at": "2026-06-02T12:00:00Z",
+                    "maintainer_activity_verified": True,
+                    "max_maintainer_age_days": -1,
+                }
+            ],
+            "pull_requests": [],
+        }
+    )
+
+    assert result["status"] == "warn"
+    assert {
+        "name": "maintainer_activity",
+        "status": "warn",
+        "message": "recent maintainer activity for bounty #319 could not be verified",
+    } in result["checks"]
+
+
 def test_submission_quality_gate_warns_for_none_maintainer_age_threshold() -> None:
     result = evaluate_submission(
         {
@@ -643,6 +670,38 @@ def test_submission_quality_gate_cli_returns_failure_exit(capsys, tmp_path) -> N
     assert main(["--input", str(input_path), "--format", "json"]) == 1
 
     assert json.loads(capsys.readouterr().out)["status"] == "fail"
+
+
+def test_submission_quality_gate_rejects_negative_max_maintainer_age_days(capsys, tmp_path) -> None:
+    input_path = tmp_path / "submission.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "submission_text": "Summary: work\n\nRefs #319\n\nValidation: pytest passed",
+                "bounties": [{"number": 319, "state": "OPEN", "awards_remaining": 1}],
+                "pull_requests": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                "--input",
+                str(input_path),
+                "--max-maintainer-age-days",
+                "-1",
+                "--format",
+                "json",
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "--max-maintainer-age-days must be zero or a positive integer" in captured.err
+    assert "Traceback" not in captured.err
+    assert captured.out == ""
 
 
 def test_submission_quality_gate_live_mode_warns_when_github_unavailable(
