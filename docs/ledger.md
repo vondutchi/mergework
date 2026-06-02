@@ -75,6 +75,14 @@ Public ledger state and proof hashes make future snapshot, bridge, or
 onchain-claim experiments auditable if maintainers and contributors decide to
 explore them.
 
+The read-only ledger snapshot exporter emits deterministic JSON for committed
+ledger state. It reports schema metadata, UTC generation time, sanitized source
+metadata, latest ledger sequence and hash, integer microunit balances sorted by
+account, fixed-supply conservation status, and hash-chain verification status.
+The exporter marks `proposal_validation` as `partial`: it verifies committed
+ledger state and does not replay every historical treasury proposal governance
+rule.
+
 ## Wallets and Sending
 
 MRWK supports native wallet addresses and signed transfers inside the ledger.
