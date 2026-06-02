@@ -225,6 +225,23 @@ def test_activity_query_rejects_control_characters(sqlite_url: str) -> None:
     assert repeated_page_response.json()["detail"] == "q must be provided at most once"
 
 
+def test_activity_rejects_unsupported_account_filter(sqlite_url: str) -> None:
+    create_schema(sqlite_url)
+    client = TestClient(create_app(database_url=sqlite_url, webhook_secret="secret"))
+
+    api_response = client.get("/api/v1/activity?account=github:alice")
+    page_response = client.get("/activity?account=github:alice")
+
+    assert api_response.status_code == 400
+    assert api_response.json()["detail"] == (
+        "account filter is not supported on activity; use /api/v1/accounts/{account}"
+    )
+    assert page_response.status_code == 400
+    assert page_response.json()["detail"] == (
+        "account filter is not supported on activity; use /api/v1/accounts/{account}"
+    )
+
+
 def test_activity_api_exposes_pending_payouts_separately_from_paid_work(
     sqlite_url: str,
 ) -> None:

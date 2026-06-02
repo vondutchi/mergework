@@ -12,6 +12,15 @@ from app.db import session_scope
 from app.query_validation import reject_control_char_query_param, reject_repeated_query_param
 from app.serializers import activity_to_dict
 
+ACTIVITY_ACCOUNT_FILTER_DETAIL = (
+    "account filter is not supported on activity; use /api/v1/accounts/{account}"
+)
+
+
+def reject_activity_account_filter(request: Request) -> None:
+    if "account" in request.query_params:
+        raise HTTPException(status_code=400, detail=ACTIVITY_ACCOUNT_FILTER_DETAIL)
+
 
 def activity_context(session: Session, query: str | None = None) -> dict[str, Any]:
     if query is not None and contains_control_character(query):
@@ -22,6 +31,7 @@ def activity_context(session: Session, query: str | None = None) -> dict[str, An
 def register_activity_routes(app: FastAPI, *, db_url: str, templates: Jinja2Templates) -> None:
     @app.get("/api/v1/activity")
     def api_activity(request: Request, q: str | None = Query(None)) -> dict[str, Any]:
+        reject_activity_account_filter(request)
         reject_control_char_query_param(request, "q")
         reject_repeated_query_param(request, "q")
         with session_scope(db_url) as session:
@@ -29,6 +39,7 @@ def register_activity_routes(app: FastAPI, *, db_url: str, templates: Jinja2Temp
 
     @app.get("/activity", response_class=HTMLResponse)
     def activity_page(request: Request, q: str | None = Query(None)) -> HTMLResponse:
+        reject_activity_account_filter(request)
         reject_control_char_query_param(request, "q")
         reject_repeated_query_param(request, "q")
         with session_scope(db_url) as session:

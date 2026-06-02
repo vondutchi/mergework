@@ -314,6 +314,10 @@ proposals appear separately in `pending_totals` and `pending_payouts`; they are
 not counted as paid, proof-backed, received, or withdrawable work until treasury
 execution creates a ledger proof:
 
+Use `/api/v1/accounts/{account}` for exact account lookups. The activity API
+does not support `account=` as a separate filter because `q=` already owns broad
+activity search.
+
 ```json
 {
   "totals": {
